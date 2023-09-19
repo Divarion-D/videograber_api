@@ -68,16 +68,16 @@ class KP(object):
         if self.api_key is None or self.api_key == "":
             raise KPException("No API key found.")
 
-        url = "%s%s?api_key=%s&%s&language=%s" % (
+        url = "%s%s?%s" % (
             self._base,
             action,
-            self.api_key,
             params,
-            self.language,
         )
 
+        api_header = {"X-API-KEY": self.api_key}
+
         req = self.__class__._session.request(
-            method, url, data=data, json=json, proxies=self.proxies
+            method, url, data=data, json=json, headers=api_header, proxies=self.proxies
         )
 
         headers = req.headers
@@ -105,23 +105,59 @@ class KP(object):
 
         json = req.json()
 
-        if "page" in json:
-            os.environ["page"] = str(json["page"])
+        # if "page" in json:
+        #     os.environ["page"] = str(json["page"])
 
-        if "total_results" in json:
-            os.environ["total_results"] = str(json["total_results"])
+        # if "total_results" in json:
+        #     os.environ["total_results"] = str(json["total"])
 
-        if "total_pages" in json:
-            os.environ["total_pages"] = str(json["total_pages"])
+        # if "total_pages" in json:
+        #     os.environ["total_pages"] = str(json["totalPages"])
 
         if self.debug:
             logger.info(json)
-            logger.info(self.cached_request.cache_info())
 
-        if "errors" in json:
-            raise KPException(json["errors"])
-
-        if "success" in json and json["success"] is False:
-            raise KPException(json["status_message"])
+        # if status code is not 200, raise an exception
+        if req.status_code != 200:
+            raise KPException(req.text)
 
         return json
+
+
+class Search(KP):
+    _urls = {
+        "filter": "/api/v2.2/films",
+        "keyword": "/api/v2.1/films/search-by-keyword",
+    }
+
+    def __init__(self):
+        super().__init__()
+
+    def search_filter(
+        self,
+        order="RATING",
+        type="ALL",
+        ratingFrom=0,
+        ratingTo=10,
+        yearFrom=1000,
+        yearTo=3000,
+        keyword=None,
+        imdbid=None,
+        page=1,
+    ):
+        params = (
+            "order=%s&type=%s&ratingFrom=%s&ratingTo=%s&yearFrom=%s&yearTo=%s&page=%s"
+            % (order, type, ratingFrom, ratingTo, yearFrom, yearTo, page)
+        )
+
+        if imdbid is not None:
+            params += "&imdbId=%s" % imdbid
+
+        if keyword is not None:
+            params += "&keyword=%s" % keyword
+
+        return self._request_obj(self._urls["filter"], params=params, key="items")
+
+    def search_by_keyword(self, keyword, page=1):
+        params = "keyword=%s&page=%s" % (keyword, page)
+        return self._request_obj(self._urls["keyword"], params=params, key="films")

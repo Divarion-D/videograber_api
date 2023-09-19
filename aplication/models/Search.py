@@ -1,10 +1,13 @@
-from aplication.libs.tmdb import TMDb, Search, Details
-from aplication.libs.kinopoisk import KP
+import aplication.libs.tmdb as TMDb
+import aplication.libs.kinopoisk as KP
 import aplication.config as config
 
-tmdb = TMDb()
+tmdb = TMDb.TMDb()
 tmdb.api_key = config.TMDB_API_KEY
 tmdb.language = "ru"
+
+kp = KP.KP()
+kp.api_key = config.KPUN_API_KEY
 
 
 class Search_model:
@@ -13,6 +16,9 @@ class Search_model:
 
     # Ищемая строка
     def search(string):
-        movies = Details().tv_show(string)
-        print(movies)
+        # movies = Details().tv_show(string)
+        # print(movies)
+        # return movies
+
+        movies = KP.Search().search_filter(keyword="си")
         return movies

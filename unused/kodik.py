@@ -5,7 +5,7 @@ from base64 import b64decode
 from typing import Optional, Pattern, Tuple, Dict, List
 from urllib.parse import urlparse
 
-from _http import client
+from unused._http import client
 
 
 class KodikDefaults:
