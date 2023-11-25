@@ -1,9 +1,18 @@
 import uvicorn
 from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from application.models.Search import Search_model
 
 
 app = FastAPI()
+
+
+@app.exception_handler(Exception)
+async def value_error_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=400,
+        content={"message": str(exc)},
+    )
 
 
 @app.get("/")

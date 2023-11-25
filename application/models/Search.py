@@ -1,12 +1,6 @@
-import application.libs.tmdb as TMDb
 import application.libs.kinopoisk as KP
 import application.config as config
 import application.models.Common as Common
-
-
-tmdb = TMDb.TMDb()
-tmdb.api_key = config.TMDB_API_KEY
-tmdb.language = "ru"
 
 kp = KP.KP()
 kp.api_key = config.KPUN_API_KEY

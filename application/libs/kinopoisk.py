@@ -66,7 +66,7 @@ class KP(object):
         key=None,
     ):
         if self.api_key is None or self.api_key == "":
-            raise KPException("No API key found.")
+            raise KPException("Kinopoisk: no API key found.")
 
         url = "%s%s?%s" % (
             self._base,
@@ -100,7 +100,7 @@ class KP(object):
                 )
             else:
                 raise KPException(
-                    "Rate limit reached. Try again in %d seconds." % sleep_time
+                    "Kinopoisk: Rate limit reached. Try again in %d seconds." % sleep_time
                 )
 
         json = req.json()
@@ -119,7 +119,7 @@ class KP(object):
 
         # if status code is not 200, raise an exception
         if req.status_code != 200:
-            raise KPException(req.text)
+            raise KPException("Kinopoisk:" + req.text)
 
         return json
 
