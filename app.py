@@ -1,6 +1,6 @@
 import uvicorn
 from fastapi import FastAPI, Request
-from aplication.models.Search import Search_model
+from application.models.Search import Search_model
 
 
 app = FastAPI()
@@ -20,8 +20,7 @@ async def root(request: Request):
 
 @app.get("/search")
 async def search(query: str):
-    data = Search_model.search(query)
-    return data
+    return Search_model().search(query)
 
 
 if __name__ == "__main__":

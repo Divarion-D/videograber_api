@@ -158,6 +158,6 @@ class Search(KP):
 
         return self._request_obj(self._urls["filter"], params=params, key="items")
 
-    def search_by_keyword(self, keyword, page=1):
+    def search_by_keyword(self, keyword: str, page: int = 1) -> dict:
         params = "keyword=%s&page=%s" % (keyword, page)
         return self._request_obj(self._urls["keyword"], params=params, key="films")

@@ -208,16 +208,7 @@ class Search(TMDb):
     def __init__(self):
         super().__init__()
 
-    def multi(self, term, adult=None, region=None, page=1):
-        """
-        Search multiple models in a single request.
-        Multi search currently supports searching for movies, tv shows and people in a single request.
-        :param term: str
-        :param adult: bool
-        :param region: str
-        :param page: int
-        :return:
-        """
+    def multi(self, term, adult=None, region=None, page: int = 1) -> dict:
         params = "query=%s&page=%s" % (quote(term), page)
         if adult is not None:
             params += "&include_adult=%s" % "true" if adult else "false"
