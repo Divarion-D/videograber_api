@@ -49,3 +49,6 @@ class Search_model:
                     }
                     data.append(details)
         return data
+
+    def details(self, id):
+        return KP.Search().get_details(id)

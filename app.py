@@ -32,5 +32,10 @@ async def search(query: str):
     return Search_model().search(query)
 
 
+@app.get("/details")
+async def details(kp_id: int):
+    return Search_model().details(kp_id)
+
+
 if __name__ == "__main__":
     uvicorn.run("app:app", host="127.0.0.2", port=8001, reload=True)

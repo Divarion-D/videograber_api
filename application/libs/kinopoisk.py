@@ -63,7 +63,6 @@ class KP(object):
         method="GET",
         data=None,
         json=None,
-        key=None,
     ):
         if self.api_key is None or self.api_key == "":
             raise KPException("Kinopoisk: no API key found.")
@@ -96,7 +95,7 @@ class KP(object):
                 logger.warning("Rate limit reached. Sleeping for: %d" % sleep_time)
                 time.sleep(abs(sleep_time))
                 return self._request_obj(
-                    action, params, call_cached, method, data, json, key
+                    action, params, call_cached, method, data, json
                 )
             else:
                 raise KPException(
@@ -156,8 +155,11 @@ class Search(KP):
         if keyword is not None:
             params += "&keyword=%s" % keyword
 
-        return self._request_obj(self._urls["filter"], params=params, key="items")
+        return self._request_obj(self._urls["filter"], params=params)
 
     def search_by_keyword(self, keyword: str, page: int = 1) -> dict:
         params = "keyword=%s&page=%s" % (keyword, page)
-        return self._request_obj(self._urls["keyword"], params=params, key="films")
+        return self._request_obj(self._urls["keyword"], params=params)
+    
+    def get_details(self, id: int) -> dict:
+        return self._request_obj("/api/v2.2/films/%s" % id)
