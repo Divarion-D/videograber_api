@@ -1,11 +1,30 @@
 from urllib.parse import urlencode
+from application.models.voidboost import voidboost
 import requests
-import Common
+import application.models.Common as Common
 
 
-class Graber_Model:
+class Extractor_Model:
     def __init__(self):
         pass
+
+    def get_player_movie(self, movie_id, player):
+        data = {}
+        if player == "voidboost" or player == "all":
+            voidboost_data = {}
+            void = voidboost(movie_id)
+            translations = void.get_translations()
+            for translation in translations:
+                if translation["video_key"] is not None:
+                    voidboost_data[translation["name"]] = void.get_movie_stream(translation["video_key"])
+            data["voidboost"] = voidboost_data
+        return data
+
+
+
+
+
+
 
     # $query = ['imdb_id' => 'tt2570292', 'limit'=> 1]; //поиск по imdb_id
     # $query = ['title' => 'Аватар', 'year' => 2004]; //поиск по title

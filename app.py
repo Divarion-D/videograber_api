@@ -2,6 +2,7 @@ import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from application.models.Search import Search_model
+from application.models.VideoExtractor import Extractor_Model
 
 
 app = FastAPI()
@@ -35,6 +36,11 @@ async def search(query: str):
 @app.get("/details")
 async def details(kp_id: int):
     return Search_model().details(kp_id)
+
+
+@app.get("/movie/videos")
+async def get_movie_videos(kp_id: int, player: str = "all"):
+    return Extractor_Model().get_player_movie(kp_id, player)
 
 
 if __name__ == "__main__":
