@@ -2,7 +2,7 @@ import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from application.models.Search import Search_model
-from application.models.VideoExtractor import Extractor_Model
+from application.models.Extractor import Extractor_Model
 
 
 app = FastAPI()
