@@ -1,4 +1,6 @@
 import uvicorn
+import argparse
+import os
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from application.models.Search import Search_model
@@ -61,4 +63,19 @@ async def get_tvseries_videos(kp_id: int, season: int, series: int, player: str 
 
 
 if __name__ == "__main__":
-    uvicorn.run("app:app", host="127.0.0.2", port=8001, reload=True)
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("-ip", help="ip address of the server")
+    parser.add_argument("-port", help="port of the server")
+    
+    args = parser.parse_args()
+    
+    if args.ip:
+        os.environ["IP"] = args.ip
+    if args.port:
+        os.environ["PORT"] = args.port
+
+    ip = os.environ.get("IP", "0.0.0.0")
+    port = os.environ.get("PORT", "8000")
+
+    uvicorn.run("app:app", host=ip, port=int(port), reload=True)
