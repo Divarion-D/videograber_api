@@ -1,5 +1,5 @@
 import application.libs.kinopoisk as KP
-import application.config as config
+import config as config
 import application.models.Common as Common
 
 kp = KP.KP()

@@ -8,18 +8,35 @@ class Extractor_Model:
     def __init__(self):
         pass
 
-    def get_player_movie(self, movie_id, player):
+    def get_player_movie(self, kp_id, player_name):
         data = {}
-        if player == "voidboost" or player == "all":
+        if player_name == "voidboost" or player_name == "all":
             voidboost_data = {}
-            void = voidboost(movie_id)
+            void = voidboost(kp_id)
             translations = void.get_translations()
             for translation in translations:
                 if translation["video_key"] is not None:
                     voidboost_data[translation["name"]] = void.get_movie_stream(translation["video_key"])
             data["voidboost"] = voidboost_data
         return data
-
+    
+    def get_seasons_tvseries(self, kp_id, player_name):
+        data = {}
+        if player_name == "voidboost" or player_name == "all":
+            void = voidboost(kp_id)
+            data["voidboost"] = void.get_seasons()
+        return data
+    
+    def get_player_tvseries(self, kp_id, player_name, season, series):
+        data = {}
+        if player_name == "voidboost" or player_name == "all":
+            voidboost_data = {}
+            void = voidboost(kp_id)
+            seasons_data = void.get_seasons()
+            for season_data in seasons_data:
+                voidboost_data[season_data["name"]] = void.get_series_stream(season_data["video_key"], season, series)
+            data["voidboost"] = voidboost_data
+        return data
 
 
 

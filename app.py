@@ -3,9 +3,11 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from application.models.Search import Search_model
 from application.models.Extractor import Extractor_Model
+# import application.models.Common as Common
 
 
 app = FastAPI()
+# Common.add_table_bd()
 
 
 @app.exception_handler(Exception)
@@ -41,6 +43,21 @@ async def details(kp_id: int):
 @app.get("/movie/videos")
 async def get_movie_videos(kp_id: int, player: str = "all"):
     return Extractor_Model().get_player_movie(kp_id, player)
+
+
+# @app.get("/translation")
+# async def get_videos_translation(kp_id: int, player: str = "all"):
+#     return Extractor_Model().get_videos_translation(kp_id, player)
+
+
+@app.get("/tvseries/seasons")
+async def get_tvseries_seasons(kp_id: int, player: str = "all"):
+    return Extractor_Model().get_seasons_tvseries(kp_id, player)
+
+
+@app.get("/tvseries/videos")
+async def get_tvseries_videos(kp_id: int, season: int, series: int, player: str = "all"):
+    return Extractor_Model().get_player_tvseries(kp_id, player, season, series)
 
 
 if __name__ == "__main__":

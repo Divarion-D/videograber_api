@@ -3,15 +3,37 @@ from itertools import product
 import requests
 import re
 import json
+import time
+from ast import literal_eval
+from application.models.Common import QB
+
+CACHE_TIME = 3600
 
 
 class voidboost:
     def __init__(self, kp_id=None):
+        self.qb = QB
         self.kp_id = kp_id
         self.video_key = None
         self.html = self._get_player()
         self.season = None
         self.series = None
+        self._add_table_bd()
+
+    def _add_table_bd(self):
+        # create table voidboost
+        self.qb.reset()  # reset query builder
+        self.qb.query(
+            """CREATE TABLE IF NOT EXISTS voidboost ("id" INTEGER PRIMARY KEY AUTOINCREMENT, "kp_id" TEXT, "translation_name" TEXT, "video_key" TEXT)"""
+        )
+        self.qb.reset()
+        self.qb.query(
+            """CREATE TABLE IF NOT EXISTS voidboost_cache ("id" INTEGER PRIMARY KEY AUTOINCREMENT, "kp_id" TEXT, "time" TEXT)"""
+        )
+        self.qb.reset()
+        self.qb.query(
+            """CREATE TABLE IF NOT EXISTS voidboost_seasons ("id" INTEGER PRIMARY KEY AUTOINCREMENT, "kp_id" TEXT, "video_key" TEXT, "translation_name" TEXT, "seasons" TEXT)"""
+        )
 
     def get_movie_stream(self, translations_key=None):
         self.video_key = translations_key
@@ -27,8 +49,8 @@ class voidboost:
         return self._get_file_url()
 
     def set_season_and_series(self, season=None, series=None):
-        self.season = season
-        self.series = series
+        self.season = str(season)
+        self.series = str(series)
 
     def _get_player(self, player_type="id"):
         if player_type == "id":
@@ -92,56 +114,126 @@ class voidboost:
         # Merge the extracted values into a dictionary
         return self._marge_url(file_decode)
 
+    def _check_cache(self):
+        cache = self.qb.select("voidboost").where([["kp_id", "=", self.kp_id]]).one()
+        if not cache:
+            cache = 0
+        else:
+            cache = cache["time"]
+        curent_time = int(time.time())
+        if curent_time - CACHE_TIME < int(cache):
+            return True
+        else:
+            self.qb.delete("voidboost").where([["kp_id", "=", self.kp_id]]).go()
+            self.qb.delete("voidboost_seasons").where([["kp_id", "=", self.kp_id]]).go()
+            return False
+
+    def _update_cache(self):
+        cache = self.qb.select("voidboost").where([["kp_id", "=", self.kp_id]]).one()
+        if cache:
+            self.qb.update("voidboost_cache", {"time": int(time.time())}).where(
+                [["kp_id", "=", self.kp_id]]
+            ).limit().go()
+        else:
+            self.qb.insert(
+                "voidboost_cache", {"kp_id": self.kp_id, "time": int(time.time())}
+            ).go()
+
     def get_translations(self):
-        # Remove the specified HTML tag and its contents
-        translations = self.html.replace(
-            '<option data-token="" data-d="" value="0">Перевод</option>', ""
-        )
-
-        # Find all occurrences of the specified HTML tag and extract the required data
-        translations = re.findall(
-            r'<option data-token="(.+?)" data-d="" value="(.+?)">(.+?)</option>',
-            translations,
-            re.MULTILINE,
-        )
-
         translations_data = []
-        # Process each translation and store the required data in a dictionary
-        for translation in translations:
-            video_key, translation_id, translation_name = translation
-            if translation_name == "-":
-                translation_name = "Оригинал"
 
-            translations_data.append(
-                {
-                    "video_key": video_key,
-                    "name": translation_name,
-                }
+        trans_bd = self.qb.select("voidboost").where([["kp_id", "=", self.kp_id]]).all()
+        if trans_bd and self._check_cache:
+            for translation in trans_bd:
+                translations_data.append(
+                    {
+                        "video_key": translation["video_key"],
+                        "name": translation["translation_name"],
+                    }
+                )
+        else:
+            # Remove the specified HTML tag and its contents
+            translations = self.html.replace(
+                '<option data-token="" data-d="" value="0">Перевод</option>', ""
             )
+
+            # Find all occurrences of the specified HTML tag and extract the required data
+            translations = re.findall(
+                r'<option data-token="(.+?)" data-d="" value="(.+?)">(.+?)</option>',
+                translations,
+                re.MULTILINE,
+            )
+
+            # Process each translation and store the required data in a dictionary
+            for translation in translations:
+                video_key, translation_id, translation_name = translation
+                if translation_name == "-":
+                    translation_name = "Оригинал"
+
+                self.qb.insert(
+                    "voidboost",
+                    {
+                        "kp_id": self.kp_id,
+                        "translation_name": translation_name,
+                        "video_key": video_key,
+                    },
+                ).go()
+
+                translations_data.append(
+                    {
+                        "video_key": video_key,
+                        "name": translation_name,
+                    }
+                )
+            self._update_cache()
         return translations_data
 
     def get_seasons(self, translations_key=None):
         seasons = []
         if translations_key is None:
-            translations = self.get_translations()
+            seasons_bd = (
+                self.qb.select("voidboost_seasons")
+                .where([["kp_id", "=", self.kp_id]])
+                .all()
+            )
+            if seasons_bd and self._check_cache:
+                for season in seasons_bd:
+                    seasons.append(
+                        {
+                            "name": season["translation_name"],
+                            "video_key": season["video_key"],
+                            "seasons": literal_eval(season["seasons"]),
+                        }
+                    )
+            else:
+                translations = self.get_translations()
+                # Get the first translation
+                for i in range(len(translations)):
+                    self.video_key = translations[i]["video_key"]
+                    self.html = self._get_player("serial_key")
+                    seasons_data = re.search(
+                        r"var seasons_episodes =(.+?);", self.html
+                    ).group(1)
+                    # str dict to dict covert
+                    seasons_data = json.loads(seasons_data)
 
-            # Get the first translation
-            for i in range(len(translations)):
-                self.video_key = translations[i]["video_key"]
-                self.html = self._get_player("serial_key")
-                seasons_data = re.search(
-                    r"var seasons_episodes =(.+?);", self.html
-                ).group(1)
-                # str dict to dict covert
-                seasons_data = json.loads(seasons_data)
-
-                seasons.append(
-                    {
-                        "name": translations[i]["name"],
-                        "video_key": self.video_key,
-                        "seasons": seasons_data,
-                    }
-                )
+                    seasons.append(
+                        {
+                            "name": translations[i]["name"],
+                            "video_key": self.video_key,
+                            "seasons": seasons_data,
+                        }
+                    )
+                    self.qb.insert(
+                        "voidboost_seasons",
+                        {
+                            "kp_id": self.kp_id,
+                            "video_key": self.video_key,
+                            "translation_name": translations[i]["name"],
+                            "seasons": str(seasons_data),
+                        },
+                    ).go()
+                self._update_cache()
         else:
             self.video_key = translations_key
             self.html = self._get_player("serial_key")
@@ -190,4 +282,4 @@ if __name__ == "__main__":
     void = voidboost(kp_id)
     seasons = void.get_seasons()
     data = seasons[1]
-    print(void.get_series_stream(data["video_key"], "1", "5"))
+    print(void.get_series_stream(data["video_key"], 1, 5))

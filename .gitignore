@@ -1,4 +1,5 @@
 .venv
 __pycache__
 .vscode/settings.json
-application/un_config.py
+un_config.py
+db.db
