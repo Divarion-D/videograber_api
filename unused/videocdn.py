@@ -4,15 +4,29 @@ import re
 import requests
 from bs4 import BeautifulSoup
 
+VIDEOCDN_API = ""
+
+
 class VideoCDN:
-    def __init__(self, url):
-        self.url = url
+    def __init__(self):
         self.HEADERS = {
             "referer": "https://videocdn.tv/",
             "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36",
         }
+
+    def getUrl(self, url):
+        self.url = url
         self.page = self.getPage()
         self.soup = self.getSoup()
+        return self.getVideo()
+
+    def getKPid(self, kp_id):
+        self.url = f"https://videocdn.tv/api/short?api_token={VIDEOCDN_API}&kinopoisk_id={kp_id}"
+        response_data = json.loads(self.getPage().text)
+        self.url = f"http:{response_data['data'][0]['iframe_src']}"
+        self.page = self.getPage()
+        self.soup = self.getSoup()
+        return self.getVideo()
 
     def getPage(self):
         for _ in range(3):
@@ -29,7 +43,7 @@ class VideoCDN:
     def getSoup(self):
         return BeautifulSoup(self.page.text, "html.parser")
 
-    def getVideoUrl(self):
+    def getVideo(self):
         """
         This function gets the video URLs from a given page.
         """
@@ -87,5 +101,6 @@ class VideoCDN:
 
 
 if __name__ == "__main__":
-    data = VideoCDN("https://196622434375553.svetacdn.in/Z1VVUcly7Aoi/tv-series/2")
-    print(data.getVideoUrl())
+    data = VideoCDN()
+    # print(data.getUrl("https://68175.svetacdn.in/Z1VVUcly7Aoi/tv-series/23"))
+    print(data.getKPid("940787"))
