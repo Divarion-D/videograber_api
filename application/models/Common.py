@@ -1,6 +1,16 @@
 from application.libs.db_query import DataBase, QueryBuilder
+from yaml import load, FullLoader
 
 QB = QueryBuilder(DataBase(), "db.db")
+
+
+def get_config() -> dict:
+    with open("config.yaml", "r") as f:
+        config = load(f, Loader=FullLoader)
+    return config
+
+
+CONFIG = get_config()
 
 
 def add_table_bd() -> None:
