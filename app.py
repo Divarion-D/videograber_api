@@ -5,10 +5,10 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from application.models.Search import Search_model
 from application.models.Extractor import Extractor_Model
-# import application.models.Common as Common
 
 
 app = FastAPI()
+
 # Common.add_table_bd()
 
 
@@ -58,7 +58,9 @@ async def get_tvseries_seasons(kp_id: int, player: str = "all"):
 
 
 @app.get("/tvseries/videos")
-async def get_tvseries_videos(kp_id: int, season: int, series: int, player: str = "all"):
+async def get_tvseries_videos(
+    kp_id: int, season: int, series: int, player: str = "all"
+):
     return Extractor_Model().get_player_tvseries(kp_id, player, season, series)
 
 
@@ -67,9 +69,9 @@ if __name__ == "__main__":
 
     parser.add_argument("-ip", help="ip address of the server")
     parser.add_argument("-port", help="port of the server")
-    
+
     args = parser.parse_args()
-    
+
     if args.ip:
         os.environ["IP"] = args.ip
     if args.port:

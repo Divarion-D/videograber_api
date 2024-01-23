@@ -1,10 +1,14 @@
 import json
 import re
 
+# import config as config
 import requests
 from bs4 import BeautifulSoup
+import application.models.Common as Common
 
-VIDEOCDN_API = ""
+
+class videocdnException(Exception):
+    pass
 
 
 class VideoCDN:
@@ -13,6 +17,7 @@ class VideoCDN:
             "referer": "https://videocdn.tv/",
             "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36",
         }
+        self.api_key = Common.CONFIG["VIDEOCDN_API"]
 
     def getUrl(self, url):
         self.url = url
@@ -21,7 +26,9 @@ class VideoCDN:
         return self.getVideo()
 
     def getKPid(self, kp_id):
-        self.url = f"https://videocdn.tv/api/short?api_token={VIDEOCDN_API}&kinopoisk_id={kp_id}"
+        if self.api_key == "":
+            raise videocdnException("Error: VideoCDN API key is not set.")
+        self.url = f"https://videocdn.tv/api/short?api_token={self.api_key}&kinopoisk_id={kp_id}"
         response_data = json.loads(self.getPage().text)
         self.url = f"http:{response_data['data'][0]['iframe_src']}"
         self.page = self.getPage()
@@ -76,25 +83,39 @@ class VideoCDN:
             for key, video_file in file_data.items():
                 # If the translation name is empty, set it to the video file
                 if translation_name == "":
-                    match = re.search(r"dn=(.*?)\[(.*?)\]", video_file)
+                    match = re.search(r"dn=(.*?)\[(.*?)\]", str(video_file))
                     if match:
                         translation_name = match.group(2)
                 # Add the URL to the list of URLs
-                urls[key] = f"https:{video_file}"
+                if key in ["1080p", "720p", "480p", "360p", "240p"]:
+                    urls[key] = f"https:{video_file}"
+                else:
+                    # Add https to url serial
+                    for series in video_file:
+                        for video in video_file[series]:
+                            video_file[series][
+                                video
+                            ] = f"https:{video_file[series][video]}"
+                    urls[key] = video_file
 
             # Append the data to the list
             if translations:
                 data.append(
                     {
-                        "id": file_id,
+                        # "id": file_id,
                         "translation_name": translation[file_id],
                         "files": urls,
                     }
                 )
             else:
                 data.append(
-                    {"id": file_id, "translation_name": translation_name, "files": urls}
+                    {
+                        # "id": file_id,
+                        "translation_name": translation_name,
+                        "files": urls,
+                    }
                 )
+                break
 
         # Return the data
         return data
@@ -103,4 +124,5 @@ class VideoCDN:
 if __name__ == "__main__":
     data = VideoCDN()
     # print(data.getUrl("https://68175.svetacdn.in/Z1VVUcly7Aoi/tv-series/23"))
-    print(data.getKPid("940787"))
+    print(data.getKPid("4647040"))
+    # print(data.getKPid("994676"))

@@ -1,5 +1,6 @@
 from urllib.parse import urlencode
-from application.models.voidboost import voidboost
+from application.libs.voidboost import voidboost
+from application.libs.videocdn import VideoCDN
 import requests
 import application.models.Common as Common
 
@@ -18,6 +19,12 @@ class Extractor_Model:
                 if translation["video_key"] is not None:
                     voidboost_data[translation["name"]] = void.get_movie_stream(translation["video_key"])
             data["voidboost"] = voidboost_data
+        if player_name == "videocdn" or player_name == "all":
+            videocdn_data = {}
+            videocdn = VideoCDN()
+            for video in videocdn.getKPid(kp_id):
+                videocdn_data[video["translation_name"]] = video["files"]
+            data["videocdn"] = videocdn_data
         return data
     
     def get_seasons_tvseries(self, kp_id, player_name):
@@ -25,6 +32,9 @@ class Extractor_Model:
         if player_name == "voidboost" or player_name == "all":
             void = voidboost(kp_id)
             data["voidboost"] = void.get_seasons()
+        if player_name == "videocdn" or player_name == "all":
+            videocdn = VideoCDN()
+            data["videocdn"] = videocdn.getKPid(kp_id)
         return data
     
     def get_player_tvseries(self, kp_id, player_name, season, series):

@@ -1,7 +1,7 @@
 # search api
 # https://kinopoiskapiunofficial.tech/
-KPUN_API_KEY = ""
+KPUN_api_key: ""
 
 # balanser (player) api
-KODIK_API = ""
-VIDEOCDN_API = ""
+KODIK_API: ""
+VIDEOCDN_API: ""

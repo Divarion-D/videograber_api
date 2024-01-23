@@ -1,9 +1,8 @@
 import application.libs.kinopoisk as KP
-import config as config
 import application.models.Common as Common
 
 kp = KP.KP()
-kp.api_key = config.KPUN_API_KEY
+kp.api_key = Common.CONFIG["KPUN_api_key"]
 
 
 class Search_model:
