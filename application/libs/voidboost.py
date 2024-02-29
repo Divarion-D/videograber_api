@@ -1,18 +1,29 @@
 import base64
-from itertools import product
-import requests
-import re
 import json
+import os
+import re
+import sqlite3
 import time
 from ast import literal_eval
-from application.models.Common import QB
+from itertools import product
+
+import requests
 
 CACHE_TIME = 3600
 
 
 class voidboost:
     def __init__(self, kp_id=None):
-        self.qb = QB
+        self.error = False
+        # check if bd folder
+        if not os.path.exists("../bd"):
+            os.makedirs("../bd")
+        # connect to db
+        self.dbcon = sqlite3.connect("../bd/voidboost.db")
+        self.dbcon.row_factory = self._dict_factory
+        self.dbcurs = self.dbcon.cursor()
+
+        # other variables
         self.kp_id = kp_id
         self.video_key = None
         self.html = self._get_player()
@@ -20,19 +31,22 @@ class voidboost:
         self.series = None
         self._add_table_bd()
 
+    def _dict_factory(self, cursor, row):
+        d = {}  # Создаем пустой словарь
+        for idx, col in enumerate(cursor.description):
+            d[col[0]] = row[idx]  # Заполняем его значениями
+        return d
+
     def _add_table_bd(self):
         # create table voidboost
-        self.qb.reset()  # reset query builder
-        self.qb.query(
+        self.dbcurs.execute(
             """CREATE TABLE IF NOT EXISTS voidboost ("id" INTEGER PRIMARY KEY AUTOINCREMENT, "kp_id" TEXT, "translation_name" TEXT, "video_key" TEXT)"""
         )
-        self.qb.reset()
-        self.qb.query(
+        self.dbcurs.execute(
             """CREATE TABLE IF NOT EXISTS voidboost_cache ("id" INTEGER PRIMARY KEY AUTOINCREMENT, "kp_id" TEXT, "time" TEXT)"""
         )
-        self.qb.reset()
-        self.qb.query(
-            """CREATE TABLE IF NOT EXISTS voidboost_seasons ("id" INTEGER PRIMARY KEY AUTOINCREMENT, "kp_id" TEXT, "video_key" TEXT, "translation_name" TEXT, "seasons" TEXT)"""
+        self.dbcurs.execute(
+            """CREATE TABLE IF NOT EXISTS voidboost_seasons ("id" INTEGER PRIMARY KEY AUTOINCREMENT, "kp_id" TEXT, "video_key" TEXT, "translation_name" TEXT, "seasons" json)"""
         )
 
     def get_movie_stream(self, translations_key=None):
@@ -65,9 +79,14 @@ class voidboost:
             else:
                 url = "https://voidboost.tv/serial/{}/iframe".format(self.video_key)
         else:
-            return False
-        data = requests.get(url).text
-        return data
+            return None
+        try:
+            data = requests.get(url).text
+            return data
+        except Exception as e:
+            self.error = True
+            print(f"Error in voidboost: \n{e}\n")
+            return None
 
     def _clearTrash(self, data):
         # Create a list of characters to be removed from the data
@@ -107,15 +126,20 @@ class voidboost:
         return stream
 
     def _get_file_url(self):
-        # Search for the 'file' value within the 'html' string
-        file = re.search(r"'file': '(.+?)'", self.html).group(1)
-        # Remove unnecessary characters and split the string
-        file_decode = self._clearTrash(file).split(",")
-        # Merge the extracted values into a dictionary
-        return self._marge_url(file_decode)
+        try:
+            # Search for the 'file' value within the 'html' string
+            file = re.search(r"'file': '(.+?)'", self.html).group(1)
+            # Remove unnecessary characters and split the string
+            file_decode = self._clearTrash(file).split(",")
+            # Merge the extracted values into a dictionary
+            return self._marge_url(file_decode)
+        except Exception:
+            return None
 
     def _check_cache(self):
-        cache = self.qb.select("voidboost").where([["kp_id", "=", self.kp_id]]).one()
+        cache = self.dbcurs.execute(
+            f"SELECT * FROM `voidboost` WHERE `kp_id` = {self.kp_id}"
+        ).fetchone()
         if not cache:
             cache = 0
         else:
@@ -124,25 +148,38 @@ class voidboost:
         if curent_time - CACHE_TIME < int(cache):
             return True
         else:
-            self.qb.delete("voidboost").where([["kp_id", "=", self.kp_id]]).go()
-            self.qb.delete("voidboost_seasons").where([["kp_id", "=", self.kp_id]]).go()
+            self.dbcurs.execute(
+                f"DELETE FROM `voidboost_cache` WHERE `kp_id` = {self.kp_id}"
+            )
+            self.dbcurs.execute(f"DELETE FROM `voidboost` WHERE `kp_id` = {self.kp_id}")
+            self.dbcon.commit()
             return False
 
     def _update_cache(self):
-        cache = self.qb.select("voidboost").where([["kp_id", "=", self.kp_id]]).one()
+        cache = self.dbcurs.execute(
+            f"SELECT * FROM `voidboost` WHERE `kp_id` = {self.kp_id}"
+        ).fetchone()
         if cache:
-            self.qb.update("voidboost_cache", {"time": int(time.time())}).where(
-                [["kp_id", "=", self.kp_id]]
-            ).limit().go()
+            self.dbcurs.execute(
+                f"UPDATE `voidboost_cache` SET `time` = {int(time.time())} WHERE `kp_id` = {self.kp_id}"
+            )
+            self.dbcon.commit()
         else:
-            self.qb.insert(
-                "voidboost_cache", {"kp_id": self.kp_id, "time": int(time.time())}
-            ).go()
+            self.dbcurs.execute(
+                f"INSERT INTO `voidboost_cache` (`kp_id`, `time`) VALUES ({self.kp_id}, {int(time.time())})"
+            )
+            self.dbcon.commit()
 
     def get_translations(self):
+        if self.error is True:
+            return None
+
         translations_data = []
 
-        trans_bd = self.qb.select("voidboost").where([["kp_id", "=", self.kp_id]]).all()
+        trans_bd = self.dbcurs.execute(
+            f"SELECT * FROM `voidboost` WHERE `kp_id` = {self.kp_id}"
+        ).fetchall()
+
         if trans_bd and self._check_cache:
             for translation in trans_bd:
                 translations_data.append(
@@ -170,14 +207,10 @@ class voidboost:
                 if translation_name == "-":
                     translation_name = "Оригинал"
 
-                self.qb.insert(
-                    "voidboost",
-                    {
-                        "kp_id": self.kp_id,
-                        "translation_name": translation_name,
-                        "video_key": video_key,
-                    },
-                ).go()
+                self.dbcurs.execute(
+                    f"INSERT INTO `voidboost` (`kp_id`, `translation_name`, `video_key`) VALUES ({self.kp_id}, '{translation_name}', '{video_key}')"
+                )
+                self.dbcon.commit()
 
                 translations_data.append(
                     {
@@ -188,23 +221,32 @@ class voidboost:
             self._update_cache()
         return translations_data
 
-    def get_seasons(self, translations_key=None):
+    def getSeasons(self, translations_key=None, v_key=False):
+        if self.error is True:
+            return None
+
         seasons = []
         if translations_key is None:
-            seasons_bd = (
-                self.qb.select("voidboost_seasons")
-                .where([["kp_id", "=", self.kp_id]])
-                .all()
-            )
+            seasons_bd = self.dbcurs.execute(
+                f"SELECT * FROM `voidboost_seasons` WHERE `kp_id` = {self.kp_id}"
+            ).fetchall()
             if seasons_bd and self._check_cache:
                 for season in seasons_bd:
-                    seasons.append(
-                        {
-                            "name": season["translation_name"],
-                            "video_key": season["video_key"],
-                            "seasons": literal_eval(season["seasons"]),
-                        }
-                    )
+                    if v_key is True:
+                        seasons.append(
+                            {
+                                "name": season["translation_name"],
+                                "video_key": season["video_key"],
+                                "seasons": literal_eval(season["seasons"]),
+                            }
+                        )
+                    else:
+                        seasons.append(
+                            {
+                                "name": season["translation_name"],
+                                "seasons": literal_eval(season["seasons"]),
+                            }
+                        )
             else:
                 translations = self.get_translations()
                 # Get the first translation
@@ -220,19 +262,15 @@ class voidboost:
                     seasons.append(
                         {
                             "name": translations[i]["name"],
-                            "video_key": self.video_key,
+                            # "video_key": self.video_key,
                             "seasons": seasons_data,
                         }
                     )
-                    self.qb.insert(
-                        "voidboost_seasons",
-                        {
-                            "kp_id": self.kp_id,
-                            "video_key": self.video_key,
-                            "translation_name": translations[i]["name"],
-                            "seasons": str(seasons_data),
-                        },
-                    ).go()
+                    self.dbcurs.execute(
+                        f"INSERT INTO `voidboost_seasons` (`kp_id`, `video_key`, `translation_name`, `seasons`) VALUES ({self.kp_id}, '{self.video_key}', '{translations[i]['name']}', '{json.dumps(seasons_data)}')"
+                    )
+                    self.dbcon.commit()
+
                 self._update_cache()
         else:
             self.video_key = translations_key
@@ -245,8 +283,8 @@ class voidboost:
 
             seasons.append(
                 {
-                    # "name": translations[i]["name"],
-                    "video_key": self.video_key,
+                    "name": translations[i]["name"],
+                    # "video_key": self.video_key,
                     "seasons": seasons_data,
                 }
             )
@@ -262,11 +300,11 @@ if __name__ == "__main__":
 
     #  print("______________________MOVIE_________________________")
 
-    # # get all single translation
-    # kp_id = "44168"
-    # void = voidboost(kp_id)
-    # translations = void.get_translations()
-    # print(void.get_movie_stream(translations[0]["video_key"]))
+    # get all single translation
+    kp_id = "44168"
+    void = voidboost(kp_id)
+    translations = void.get_translations()
+    print(void.get_movie_stream(translations[0]["video_key"]))
 
     # print("____________________________________________________")
     # # get concrete translation
@@ -276,10 +314,10 @@ if __name__ == "__main__":
     # # key translation
     # print(void.get_movie_stream(translations[3]["video_key"]))
 
-    print("____________________TV_SHOW__________________________")
-    # get all multi translation
-    kp_id = "404900"
-    void = voidboost(kp_id)
-    seasons = void.get_seasons()
-    data = seasons[1]
-    print(void.get_series_stream(data["video_key"], 1, 5))
+    # print("____________________TV_SHOW__________________________")
+    # # get all multi translation
+    # kp_id = "404900"
+    # void = voidboost(kp_id)
+    # seasons = void.getSeasons()
+    # data = seasons[1]
+    # print(void.get_series_stream(data["video_key"], 1, 5))
