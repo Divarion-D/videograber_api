@@ -17,6 +17,11 @@ class VideoCDN:
             "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36",
         }
         self.api_key = api_key
+        self.soup = None
+        self.page = None
+        self.url = None
+        self.data = None
+        self.kp_id = None
 
     def setKPid(self, kp_id):
         self.kp_id = str(kp_id)
@@ -26,10 +31,14 @@ class VideoCDN:
         if self.api_key == "":
             raise videocdnException("Error: VideoCDN API key is not set.")
         self.url = f"https://videocdn.tv/api/short?api_token={self.api_key}&kinopoisk_id={self.kp_id}"
-        response_data = json.loads(self.getPage().text)
-        self.url = f"http:{response_data['data'][0]['iframe_src']}"
-        self.page = self.getPage()
-        self.soup = self.getSoup()
+        data = self.getPage()
+        if data is not None:
+            response_data = json.loads(data.text)
+            self.url = f"http:{response_data['data'][0]['iframe_src']}"
+            self.page = self.getPage()
+            self.soup = self.getSoup()
+        else:
+            return None
 
     def getPage(self):
         for _ in range(3):
@@ -91,15 +100,13 @@ class VideoCDN:
                             .split("<br><i>")[1]
                             .split("</i>")[0]
                         )
-                        seasons = [
-                            {
-                                translation["id"]: [
-                                    video["id"].split("_")[1]
-                                    for video in translation["folder"]
-                                ]
-                            }
+                        seasons = {
+                            translation["id"]: [
+                                video["id"].split("_")[1]
+                                for video in translation["folder"]
+                            ]
                             for translation in translation_data
-                        ]
+                        }
                         seasons_data.append(
                             {"name": translation_name, "seasons": seasons}
                         )
@@ -109,24 +116,25 @@ class VideoCDN:
 
     def TV_link(self, season, series) -> dict:
         data = {}
-        download = self.soup.select_one("#fs")
-        if download:
-            json_data = download.get("value")
-            if json_data:
-                json_data = json.loads(json_data)
-                for translation_id, translation_data in json_data.items():
-                    for season_data in translation_data:
-                        for folder_data in season_data["folder"]:
-                            if folder_data["id"] == f"{season}_{series}":
-                                translation_name = (
-                                    folder_data["comment"]
-                                    .split("<br><i>")[1]
-                                    .split("</i>")[0]
-                                )
-                                data[translation_name] = self.URLconvertStrToList(
-                                    folder_data["file"]
-                                )
-                                break
+        if self.soup is not None:
+            download = self.soup.select_one("#fs")
+            if download:
+                json_data = download.get("value")
+                if json_data:
+                    json_data = json.loads(json_data)
+                    for translation_id, translation_data in json_data.items():
+                        for season_data in translation_data:
+                            for folder_data in season_data["folder"]:
+                                if folder_data["id"] == f"{season}_{series}":
+                                    translation_name = (
+                                        folder_data["comment"]
+                                        .split("<br><i>")[1]
+                                        .split("</i>")[0]
+                                    )
+                                    data[translation_name] = self.URLconvertStrToList(
+                                        folder_data["file"]
+                                    )
+                                    break
         return data
 
 

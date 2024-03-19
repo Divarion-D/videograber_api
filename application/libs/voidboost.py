@@ -15,18 +15,13 @@ CACHE_TIME = 3600
 class voidboost:
     def __init__(self, kp_id=None):
         self.error = False
-        # check if bd folder
-        if not os.path.exists("../bd"):
-            os.makedirs("../bd")
         # connect to db
-        self.dbcon = sqlite3.connect("../bd/voidboost.db")
+        self.dbcon = sqlite3.connect("voidboost.db")
         self.dbcon.row_factory = self._dict_factory
         self.dbcurs = self.dbcon.cursor()
 
         # other variables
-        self.kp_id = kp_id
         self.video_key = None
-        self.html = self._get_player()
         self.season = None
         self.series = None
         self._add_table_bd()
@@ -48,6 +43,7 @@ class voidboost:
         self.dbcurs.execute(
             """CREATE TABLE IF NOT EXISTS voidboost_seasons ("id" INTEGER PRIMARY KEY AUTOINCREMENT, "kp_id" TEXT, "video_key" TEXT, "translation_name" TEXT, "seasons" json)"""
         )
+        self.dbcon.commit()
 
     def get_movie_stream(self, translations_key=None):
         self.video_key = translations_key
@@ -221,7 +217,11 @@ class voidboost:
             self._update_cache()
         return translations_data
 
-    def getSeasons(self, translations_key=None, v_key=False):
+    def setKPid(self, kp_id):
+        self.kp_id = str(kp_id)
+        self.html = self._get_player()
+
+    def TvSeasons(self, translations_key=None, v_key=False):
         if self.error is True:
             return None
 
@@ -291,20 +291,72 @@ class voidboost:
 
         return seasons
 
+    def TV_link(self, season_number, episode_number):
+        data = {}
+        # get all translation video key
+        seasons_bd = self.dbcurs.execute(
+            f"SELECT * FROM `voidboost_seasons` WHERE `kp_id` = {self.kp_id}"
+        ).fetchall()
+        if seasons_bd and self._check_cache:
+            for season in seasons_bd:
+                video_file = self.get_series_stream(
+                    season["video_key"], season_number, episode_number
+                )
+                if video_file:
+                    replace_key = {
+                        "240p": "240",
+                        "360p": "360",
+                        "480p": "480",
+                        "720p": "720",
+                        "1080p": "1080",
+                        "2160p": "2160",
+                    }
+
+                    new_video_file = dict(
+                        (replace_key[key], value) for (key, value) in video_file.items()
+                    )
+
+                    data[season["translation_name"]] = new_video_file
+        else:
+            translations = self.get_translations()
+            for translation in translations:
+                video_file = self.get_series_stream(
+                    translation["video_key"], season_number, episode_number
+                )
+                if video_file:
+                    replace_key = {
+                        "240p": "240",
+                        "360p": "360",
+                        "480p": "480",
+                        "720p": "720",
+                        "1080p": "1080",
+                        "2160p": "2160",
+                    }
+
+                    new_video_file = dict(
+                        (replace_key[key], value) for (key, value) in video_file.items()
+                    )
+
+                    data[translation["name"]] = new_video_file
+
+        return data
+
 
 if __name__ == "__main__":
-    # # error
-    # kp_id = "55489498484"
-    # void = voidboost(kp_id)
-    # print(void.get_stream())
+    data = voidboost()
+    # data.setKPid("491724")
+    # print(data.Movie_link())
+
+    data.setKPid("5270353")
+    # print(data.TvSeasons())
+    print(data.TV_link(1, 1))
 
     #  print("______________________MOVIE_________________________")
-
     # get all single translation
-    kp_id = "44168"
-    void = voidboost(kp_id)
-    translations = void.get_translations()
-    print(void.get_movie_stream(translations[0]["video_key"]))
+    # kp_id = "2288"
+    # void = voidboost(kp_id)
+    # translations = void.get_translations()
+    # print(void.get_movie_stream(translations[2]["video_key"]))
 
     # print("____________________________________________________")
     # # get concrete translation
@@ -313,11 +365,3 @@ if __name__ == "__main__":
     # translations = void.get_translations()
     # # key translation
     # print(void.get_movie_stream(translations[3]["video_key"]))
-
-    # print("____________________TV_SHOW__________________________")
-    # # get all multi translation
-    # kp_id = "404900"
-    # void = voidboost(kp_id)
-    # seasons = void.getSeasons()
-    # data = seasons[1]
-    # print(void.get_series_stream(data["video_key"], 1, 5))

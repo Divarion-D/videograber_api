@@ -5,7 +5,8 @@ import application.models.Common as Common
 
 class Extractor_Model:
     def __init__(self):
-        pass
+        self.vodboost = voidboost()
+        self.videocdn = VideoCDN(Common.CONFIG["VIDEOCDN_API"])
 
     def get_player_movie(self, kp_id, player_name):
         data = {}
@@ -30,25 +31,19 @@ class Extractor_Model:
     def get_seasons_tvseries(self, kp_id, player_name):
         data = {}
         if player_name == "voidboost" or player_name == "all":
-            void = voidboost(kp_id)
-            data["voidboost"] = void.getSeasons()
+            self.vodboost.setKPid(kp_id)
+            data["voidboost"] = self.vodboost.TvSeasons()
         if player_name == "videocdn" or player_name == "all":
-            videocdn = VideoCDN(kp_id, Common.CONFIG["VIDEOCDN_API"])
-            data["videocdn"] = videocdn.getSeasons()
+            self.videocdn.setKPid(kp_id)
+            data["videocdn"] = self.videocdn.TvSeasons()
         return data
 
     def get_player_tvseries(self, kp_id, player_name, season, series):
         data = {}
         if player_name == "voidboost" or player_name == "all":
-            voidboost_data = {}
-            void = voidboost(kp_id)
-            seasons_data = void.getSeasons(v_key=True)
-            for season_data in seasons_data:
-                voidboost_data[season_data["name"]] = void.get_series_stream(
-                    season_data["video_key"], season, series
-                )
-            data["voidboost"] = voidboost_data
+            self.vodboost.setKPid(kp_id)
+            data["voidboost"] = self.vodboost.TV_link(season, series)
         if player_name == "videocdn" or player_name == "all":
-            videocdn = VideoCDN(kp_id, Common.CONFIG["VIDEOCDN_API"])
-            data["videocdn"] = videocdn.getVideos()
+            self.videocdn.setKPid(kp_id)
+            data["videocdn"] = self.videocdn.TV_link(season, series)
         return data
