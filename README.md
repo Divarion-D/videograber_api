@@ -6,7 +6,7 @@
 
 ## Реализованно
 - [x] voidboost
-- [ ] videocdn
+- [x] videocdn
 - [ ] bazon
 - [ ] ustore
 - [ ] kodik
