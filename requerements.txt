@@ -2,3 +2,4 @@ uvicorn
 fastapi
 requests
 bs4
+PyYAML

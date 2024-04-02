@@ -11,21 +11,11 @@ class Extractor_Model:
     def get_player_movie(self, kp_id, player_name):
         data = {}
         if player_name == "voidboost" or player_name == "all":
-            voidboost_data = {}
-            void = voidboost(kp_id)
-            translations = void.get_translations()
-            for translation in translations:
-                if translation["video_key"] is not None:
-                    voidboost_data[translation["name"]] = void.get_movie_stream(
-                        translation["video_key"]
-                    )
-            data["voidboost"] = voidboost_data
+            self.vodboost.setKPid(kp_id)
+            data["voidboost"] = self.vodboost.Movie_link()
         if player_name == "videocdn" or player_name == "all":
-            videocdn_data = {}
-            videocdn = VideoCDN(kp_id, Common.CONFIG["VIDEOCDN_API"])
-            for video in videocdn.getData():
-                videocdn_data[video["translation_name"]] = video["files"]
-            data["videocdn"] = videocdn_data
+            self.videocdn.setKPid(kp_id)
+            data["videocdn"] = self.videocdn.Movie_link()
         return data
 
     def get_seasons_tvseries(self, kp_id, player_name):

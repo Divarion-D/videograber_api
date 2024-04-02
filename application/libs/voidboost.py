@@ -1,6 +1,5 @@
 import base64
 import json
-import os
 import re
 import sqlite3
 import time
@@ -217,6 +216,19 @@ class voidboost:
             self._update_cache()
         return translations_data
 
+    def _replace_quality(self, data: dict):
+        replace_key = {
+            "240p": "240",
+            "360p": "360",
+            "480p": "480",
+            "720p": "720",
+            "1080p": "1080",
+            "2160p": "2160",
+        }
+
+        new_data = dict((replace_key[key], value) for (key, value) in data.items())
+        return new_data
+
     def setKPid(self, kp_id):
         self.kp_id = str(kp_id)
         self.html = self._get_player()
@@ -303,20 +315,7 @@ class voidboost:
                     season["video_key"], season_number, episode_number
                 )
                 if video_file:
-                    replace_key = {
-                        "240p": "240",
-                        "360p": "360",
-                        "480p": "480",
-                        "720p": "720",
-                        "1080p": "1080",
-                        "2160p": "2160",
-                    }
-
-                    new_video_file = dict(
-                        (replace_key[key], value) for (key, value) in video_file.items()
-                    )
-
-                    data[season["translation_name"]] = new_video_file
+                    data[season["translation_name"]] = self._replace_quality(video_file)
         else:
             translations = self.get_translations()
             for translation in translations:
@@ -324,21 +323,17 @@ class voidboost:
                     translation["video_key"], season_number, episode_number
                 )
                 if video_file:
-                    replace_key = {
-                        "240p": "240",
-                        "360p": "360",
-                        "480p": "480",
-                        "720p": "720",
-                        "1080p": "1080",
-                        "2160p": "2160",
-                    }
+                    data[translation["name"]] = self._replace_quality(video_file)
 
-                    new_video_file = dict(
-                        (replace_key[key], value) for (key, value) in video_file.items()
-                    )
+        return data
 
-                    data[translation["name"]] = new_video_file
-
+    def Movie_link(self):
+        data = {}
+        translations = self.get_translations()
+        for translation in translations:
+            video_file = self.get_movie_stream(translation["video_key"])
+            if video_file:
+                data[translation["name"]] = self._replace_quality(video_file)
         return data
 
 
@@ -350,18 +345,3 @@ if __name__ == "__main__":
     data.setKPid("5270353")
     # print(data.TvSeasons())
     print(data.TV_link(1, 1))
-
-    #  print("______________________MOVIE_________________________")
-    # get all single translation
-    # kp_id = "2288"
-    # void = voidboost(kp_id)
-    # translations = void.get_translations()
-    # print(void.get_movie_stream(translations[2]["video_key"]))
-
-    # print("____________________________________________________")
-    # # get concrete translation
-    # kp_id = "370"
-    # void = voidboost(kp_id)
-    # translations = void.get_translations()
-    # # key translation
-    # print(void.get_movie_stream(translations[3]["video_key"]))
