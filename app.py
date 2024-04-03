@@ -5,12 +5,10 @@ import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from application.models.Extractor import Extractor_Model
+from application.models.Common import Extractor_Model
 from application.models.Search import Search_model
 
 app = FastAPI()
-
-# Common.add_table_bd()
 
 
 @app.exception_handler(Exception)
@@ -46,11 +44,6 @@ async def details(kp_id: int):
 @app.get("/movie/videos")
 async def get_movie_videos(kp_id: int, player: str = "all"):
     return Extractor_Model().get_player_movie(kp_id, player)
-
-
-# @app.get("/translation")
-# async def get_videos_translation(kp_id: int, player: str = "all"):
-#     return Extractor_Model().get_videos_translation(kp_id, player)
 
 
 @app.get("/tvseries/seasons")
