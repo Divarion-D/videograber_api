@@ -12,7 +12,7 @@ CACHE_TIME = 3600
 
 
 class voidboost:
-    def __init__(self, kp_id=None):
+    def __init__(self):
         self.error = False
         # connect to db
         self.dbcon = sqlite3.connect("voidboost.db")

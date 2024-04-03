@@ -1,4 +1,5 @@
 """Kodik module utils"""
+
 import re
 import warnings
 from base64 import b64decode
