@@ -1,9 +1,14 @@
 import argparse
 import os
 
+import redis.asyncio as redis
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.redis import RedisBackend
+from fastapi_cache.decorator import cache
+from redis.asyncio.connection import ConnectionPool
 
 from application.models.Common import Extractor_Model
 from application.models.Search import Search_model
@@ -42,20 +47,30 @@ async def details(kp_id: int):
 
 
 @app.get("/movie/videos")
+@cache(expire=180)
 async def get_movie_videos(kp_id: int, player: str = "all"):
     return Extractor_Model().get_player_movie(kp_id, player)
 
 
 @app.get("/tvseries/seasons")
+@cache(expire=1800)
 async def get_tvseries_seasons(kp_id: int, player: str = "all"):
     return Extractor_Model().get_seasons_tvseries(kp_id, player)
 
 
 @app.get("/tvseries/videos")
+@cache(expire=180)
 async def get_tvseries_videos(
     kp_id: int, season: int, series: int, player: str = "all"
 ):
     return Extractor_Model().get_player_tvseries(kp_id, player, season, series)
+
+
+@app.on_event("startup")
+async def startup():
+    pool = ConnectionPool.from_url(url="redis://redis")
+    r = redis.Redis(connection_pool=pool)
+    FastAPICache.init(RedisBackend(r), prefix="fastapi-cache")
 
 
 if __name__ == "__main__":
