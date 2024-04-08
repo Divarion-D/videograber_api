@@ -12,7 +12,9 @@ class Search_model:
     # Ищемая строка
     def search(self, string):
         kp_data = KP.Search().search_by_keyword(string)["films"]
-        data = []
+        data = {}
+        results = []
+        total = 0
 
         for i in range(len(kp_data)):
             # if nameRu is set
@@ -46,7 +48,10 @@ class Search_model:
                         "country": country,
                         "genre": genre,
                     }
-                    data.append(details)
+                    results.append(details)
+                    total += 1
+
+        data = {"total": total, "results": results}
         return data
 
     def details(self, id):

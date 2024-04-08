@@ -3,3 +3,5 @@ fastapi
 requests
 bs4
 PyYAML
+fastapi-cache2
+redis

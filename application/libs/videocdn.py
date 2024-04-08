@@ -140,9 +140,12 @@ class VideoCDN:
 
 if __name__ == "__main__":
     data = VideoCDN("Api_key")
-    # data.setKPid("491724")
-    # print(data.Movie_link())
+    data.setKPid("491724")
+    # Get movie links
+    print(data.Movie_link())
 
-    data.setKPid("749374")
+    # data.setKPid("749374")
+    # # Get seasons
     # print(data.TvSeasons())
-    print(data.TV_link(1, 1))
+    # # Get episode links
+    # print(data.TV_link(1, 1))
