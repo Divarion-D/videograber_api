@@ -67,20 +67,26 @@ class VideoCDN:
 
     def Movie_link(self) -> dict:
         data = {}
+        translation = {}
         download = self.soup.select_one("#fs")
         translations = self.soup.find(class_="translations")
         if translations:
-            translation = {}
             for option in translations.find_all("option"):
                 translation[option.attrs["value"]] = option.get_text().strip()
+
         if download:
             json_data = download.get("value")
             if json_data:
                 json_data = json.loads(json_data)
-                for translation_id, translation_data in json_data.items():
-                    # Add the translation name to the dictionary
-                    data[translation[translation_id]] = self.URLconvertStrToList(
-                        translation_data
+                if translation:
+                    for translation_id, translation_data in json_data.items():
+                        # Add the translation name to the dictionary
+                        data[translation[translation_id]] = self.URLconvertStrToList(
+                            translation_data
+                        )
+                else:
+                    data["Дубляж"] = self.URLconvertStrToList(
+                        json_data[next(iter(json_data.keys()))]
                     )
         return data
 

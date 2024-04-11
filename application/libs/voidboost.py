@@ -304,6 +304,8 @@ class voidboost:
         return seasons
 
     def TV_link(self, season_number, episode_number):
+        if self.error is True:
+            return None
         data = {}
         # get all translation video key
         seasons_bd = self.dbcurs.execute(
@@ -328,6 +330,8 @@ class voidboost:
         return data
 
     def Movie_link(self):
+        if self.error is True:
+            return None
         data = {}
         translations = self.get_translations()
         for translation in translations:
