@@ -61,7 +61,7 @@ class VideoCDN:
         videos_url = {}
         for url in url_list:
             resolution = url.split("//")[0].replace("[", "").replace("p]", "")
-            video_url = "http://" + url.split("//")[1]
+            video_url = "https://" + url.split("//")[1]
             videos_url[resolution] = video_url
         return videos_url
 

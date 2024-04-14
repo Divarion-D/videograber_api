@@ -47,7 +47,7 @@ async def details(kp_id: int):
 
 
 @app.get("/movie/videos")
-@cache(expire=180)
+@cache(expire=60)
 async def get_movie_videos(kp_id: int, player: str = "all"):
     return Extractor_Model().get_player_movie(kp_id, player)
 
