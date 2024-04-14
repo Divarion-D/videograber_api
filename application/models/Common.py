@@ -2,6 +2,7 @@ from yaml import FullLoader, load
 
 from application.libs.videocdn import VideoCDN
 from application.libs.voidboost import voidboost
+from application.libs.hdvb import hdvb
 
 
 def get_config() -> dict:
@@ -24,6 +25,7 @@ class Extractor_Model:
     def __init__(self):
         self.vodboost = voidboost()
         self.videocdn = VideoCDN(CONFIG["VIDEOCDN_API"])
+        # self.hdvb = hdvb(CONFIG["HDVB_API"])
 
     def get_player_movie(self, kp_id, player_name):
         data = {}
@@ -33,6 +35,9 @@ class Extractor_Model:
         if player_name == "videocdn" or player_name == "all":
             self.videocdn.setKPid(kp_id)
             data["videocdn"] = self.videocdn.Movie_link()
+        # if player_name == "hdvb" or player_name == "all":
+        #     self.hdvb.setKPid(kp_id)
+        #     data["hdvb"] = self.hdvb.Movie_link()
         return data
 
     def get_seasons_tvseries(self, kp_id, player_name):

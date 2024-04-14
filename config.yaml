@@ -3,5 +3,5 @@
 KPUN_api_key: ""
 
 # balanser (player) api
-KODIK_API: ""
 VIDEOCDN_API: ""
+HDVB_API: ""
