@@ -68,7 +68,7 @@ class VideoCDN:
     def Movie_link(self) -> dict:
         data = {}
         translation = {}
-        download = self.soup.select_one("#fs")
+        download = self.soup.select_one("#ury")
         translations = self.soup.find(class_="translations")
         if translations:
             for option in translations.find_all("option"):
@@ -93,7 +93,7 @@ class VideoCDN:
     def TvSeasons(self) -> dict:
         seasons_data = []
         try:
-            download = self.soup.select_one("#fs")
+            download = self.soup.select_one("#ury")
             if download:
                 json_data = download.get("value")
                 if json_data:
@@ -123,7 +123,7 @@ class VideoCDN:
     def TV_link(self, season, series) -> dict:
         data = {}
         if self.soup is not None:
-            download = self.soup.select_one("#fs")
+            download = self.soup.select_one("#ury")
             if download:
                 json_data = download.get("value")
                 if json_data:
